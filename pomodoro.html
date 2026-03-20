@@ -4,130 +4,141 @@
 <meta charset="UTF-8">
 <title>Pomodoro</title>
 
-<!-- Poppins font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  body {
+  html, body {
     margin: 0;
+    height: 100%;
+    background: transparent;
     font-family: 'Poppins', sans-serif;
-    background: #f6f6f6;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
   }
 
-  .container {
+  .card {
+    backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.4);
+    border-radius: 20px;
+    padding: 25px;
+    width: 300px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.6);
     text-align: center;
   }
 
   .circle {
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    background: conic-gradient(#FFD84D 0deg, #e6e6e6 0deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 30px;
+    width: 240px;
+    height: 240px;
     position: relative;
+    margin: 0 auto 20px;
+  }
+
+  svg {
+    transform: rotate(-90deg);
+  }
+
+  .bg {
+    stroke: #e6e6e6;
+  }
+
+  .progress {
+    stroke: #FFD84D;
+    stroke-linecap: round;
+    transition: stroke 0.3s;
   }
 
   .inner {
-    width: 220px;
-    height: 220px;
-    background: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px;
+    height: 180px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
     border-radius: 50%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
   }
 
   .time {
-    font-size: 42px;
+    font-size: 36px;
     font-weight: 500;
   }
 
   .session {
-    color: #777;
-    font-size: 14px;
-  }
-
-  .pause-icon {
-    position: absolute;
-    font-size: 50px;
-    color: #FFD84D;
-    display: none;
-  }
-
-  .paused .pause-icon {
-    display: block;
-  }
-
-  .paused .time,
-  .paused .session {
-    opacity: 0.2;
+    font-size: 13px;
+    color: #555;
+    letter-spacing: 1px;
   }
 
   .controls {
     display: flex;
-    gap: 10px;
     justify-content: center;
-    margin-bottom: 20px;
+    gap: 20px;
+    margin: 15px 0;
   }
 
-  button {
-    padding: 8px 16px;
+  .icon-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
     border: none;
-    border-radius: 10px;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(10px);
     cursor: pointer;
-    background: #FFD84D;
-    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
   }
 
   .settings {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 260px;
+    margin-top: 10px;
   }
 
   .row {
     display: flex;
     justify-content: space-between;
-    background: white;
-    padding: 12px;
+    background: rgba(255,255,255,0.5);
+    padding: 10px;
     border-radius: 10px;
   }
 
   input {
     width: 50px;
     border: none;
-    background: #f0f0f0;
+    background: rgba(255,255,255,0.7);
     border-radius: 6px;
     text-align: center;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins';
   }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="circle" id="circle">
-    <div class="inner" id="inner">
-      <div class="pause-icon">⏸</div>
+<div class="card">
+  <div class="circle">
+    <svg width="240" height="240">
+      <circle class="bg" cx="120" cy="120" r="100" stroke-width="10" fill="none"/>
+      <circle class="progress" id="progress" cx="120" cy="120" r="100" stroke-width="10" fill="none"
+        stroke-dasharray="628"
+        stroke-dashoffset="628"/>
+    </svg>
+
+    <div class="inner">
       <div class="time" id="time">25:00</div>
-      <div class="session" id="session">Focus</div>
+      <div class="session" id="session">FOCUS</div>
     </div>
   </div>
 
   <div class="controls">
-    <button onclick="start()">Start</button>
-    <button onclick="pause()">Pause</button>
-    <button onclick="reset()">Reset</button>
+    <button class="icon-btn" onclick="toggle()" id="playPause">▶</button>
+    <button class="icon-btn" onclick="reset()">⟲</button>
   </div>
 
   <div class="settings">
@@ -146,31 +157,33 @@
 let focusTime = 25 * 60;
 let breakTime = 5 * 60;
 let timeLeft;
+
 let isRunning = false;
 let isFocus = true;
 let startTime = null;
 
 const radius = 100;
 const circumference = 2 * Math.PI * radius;
+
 const progress = document.getElementById("progress");
 
-// 🔹 загрузка из localStorage
+// ✅ загрузка настроек
 function loadSettings() {
   const savedFocus = localStorage.getItem("focusTime");
   const savedBreak = localStorage.getItem("breakTime");
 
   if (savedFocus) {
-    focusTime = savedFocus;
+    focusTime = parseInt(savedFocus);
     document.getElementById("focusInput").value = focusTime / 60;
   }
 
   if (savedBreak) {
-    breakTime = savedBreak;
+    breakTime = parseInt(savedBreak);
     document.getElementById("breakInput").value = breakTime / 60;
   }
 }
 
-// 🔹 сохранение
+// ✅ сохранение
 function saveSettings() {
   localStorage.setItem("focusTime", focusTime);
   localStorage.setItem("breakTime", breakTime);
@@ -237,7 +250,6 @@ function reset() {
   focusTime = document.getElementById("focusInput").value * 60;
   breakTime = document.getElementById("breakInput").value * 60;
 
-  // 🔹 сохраняем
   saveSettings();
 
   isFocus = true;
@@ -247,14 +259,13 @@ function reset() {
   updateProgress();
 }
 
-// 🔹 инициализация
+// 🚀 запуск
 loadSettings();
 timeLeft = focusTime;
 
 updateDisplay();
 updateProgress();
 </script>
-
 
 </body>
 </html>
