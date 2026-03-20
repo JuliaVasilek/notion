@@ -145,69 +145,116 @@
 <script>
 let focusTime = 25 * 60;
 let breakTime = 5 * 60;
-let timeLeft = focusTime;
+let timeLeft;
 let isRunning = false;
 let isFocus = true;
-let timer;
+let startTime = null;
+
+const radius = 100;
+const circumference = 2 * Math.PI * radius;
+const progress = document.getElementById("progress");
+
+// 🔹 загрузка из localStorage
+function loadSettings() {
+  const savedFocus = localStorage.getItem("focusTime");
+  const savedBreak = localStorage.getItem("breakTime");
+
+  if (savedFocus) {
+    focusTime = savedFocus;
+    document.getElementById("focusInput").value = focusTime / 60;
+  }
+
+  if (savedBreak) {
+    breakTime = savedBreak;
+    document.getElementById("breakInput").value = breakTime / 60;
+  }
+}
+
+// 🔹 сохранение
+function saveSettings() {
+  localStorage.setItem("focusTime", focusTime);
+  localStorage.setItem("breakTime", breakTime);
+}
 
 function updateDisplay() {
   const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
+  const seconds = Math.floor(timeLeft % 60);
 
   document.getElementById("time").textContent =
     `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
 
   document.getElementById("session").textContent =
-    isFocus ? "Focus" : "Break";
-
-  updateCircle();
+    isFocus ? "FOCUS" : "BREAK";
 }
 
-function updateCircle() {
+function animate(timestamp) {
+  if (!isRunning) return;
+
+  if (!startTime) startTime = timestamp;
+
+  const delta = (timestamp - startTime) / 1000;
+  startTime = timestamp;
+
+  timeLeft -= delta;
+
+  if (timeLeft <= 0) {
+    isFocus = !isFocus;
+    timeLeft = isFocus ? focusTime : breakTime;
+  }
+
+  updateProgress();
+  updateDisplay();
+
+  requestAnimationFrame(animate);
+}
+
+function updateProgress() {
   const total = isFocus ? focusTime : breakTime;
-  const progress = (1 - timeLeft / total) * 360;
+  const percent = timeLeft / total;
 
-  document.getElementById("circle").style.background =
-    `conic-gradient(#FFD84D ${progress}deg, #e6e6e6 ${progress}deg)`;
+  const offset = circumference * percent;
+  progress.style.strokeDashoffset = offset;
+
+  progress.style.stroke = isFocus ? "#FFD84D" : "#214FAA";
 }
 
-function start() {
-  if (isRunning) return;
+function toggle() {
+  isRunning = !isRunning;
 
-  document.getElementById("inner").classList.remove("paused");
-  isRunning = true;
+  document.getElementById("playPause").textContent =
+    isRunning ? "⏸" : "▶";
 
-  timer = setInterval(() => {
-    timeLeft--;
-    updateDisplay();
-
-    if (timeLeft <= 0) {
-      isFocus = !isFocus;
-      timeLeft = isFocus ? focusTime : breakTime;
-    }
-  }, 1000);
-}
-
-function pause() {
-  isRunning = false;
-  clearInterval(timer);
-  document.getElementById("inner").classList.add("paused");
+  if (isRunning) {
+    startTime = null;
+    requestAnimationFrame(animate);
+  }
 }
 
 function reset() {
-  pause();
+  isRunning = false;
+  document.getElementById("playPause").textContent = "▶";
 
   focusTime = document.getElementById("focusInput").value * 60;
   breakTime = document.getElementById("breakInput").value * 60;
+
+  // 🔹 сохраняем
+  saveSettings();
 
   isFocus = true;
   timeLeft = focusTime;
 
   updateDisplay();
+  updateProgress();
 }
 
+// 🔹 инициализация
+loadSettings();
+timeLeft = focusTime;
+
 updateDisplay();
+updateProgress();
 </script>
+
 
 </body>
 </html>
