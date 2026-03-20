@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pomodoro</title>
+<style>
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f6f6f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .container {
+    text-align: center;
+  }
+
+  .circle {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: conic-gradient(#FFD84D 0deg, #e6e6e6 0deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 30px;
+    position: relative;
+  }
+
+  .inner {
+    width: 220px;
+    height: 220px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .time {
+    font-size: 42px;
+    font-weight: 500;
+  }
+
+  .session {
+    color: #777;
+    font-size: 14px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #FFD84D;
+  }
+
+  .settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 260px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  input {
+    width: 50px;
+    border: none;
+    background: #f0f0f0;
+    border-radius: 6px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="circle" id="circle">
+    <div class="inner">
+      <div class="time" id="time">25:00</div>
+      <div class="session" id="session">Focus</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="start()">Start</button>
+    <button onclick="pause()">Pause</button>
+    <button onclick="reset()">Reset</button>
+  </div>
+
+  <div class="settings">
+    <div class="row">
+      <span>Focus</span>
+      <input id="focusInput" type="number" value="25">
+    </div>
+    <div class="row">
+      <span>Break</span>
+      <input id="breakInput" type="number" value="5">
+    </div>
+  </div>
+</div>
+
+<script>
+let focusTime = 25 * 60;
+let breakTime = 5 * 60;
+let timeLeft = focusTime;
+let isRunning = false;
+let isFocus = true;
+let timer;
+
+function updateDisplay() {
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  document.getElementById("time").textContent =
+    `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+
+  document.getElementById("session").textContent =
+    isFocus ? "Focus" : "Break";
+
+  updateCircle();
+}
+
+function updateCircle() {
+  const total = isFocus ? focusTime : breakTime;
+  const progress = (1 - timeLeft / total) * 360;
+  document.getElementById("circle").style.background =
+    `conic-gradient(#FFD84D ${progress}deg, #e6e6e6 ${progress}deg)`;
+}
+
+function start() {
+  if (isRunning) return;
+  isRunning = true;
+
+  timer = setInterval(() => {
+    timeLeft--;
+    updateDisplay();
+
+    if (timeLeft <= 0) {
+      isFocus = !isFocus;
+      timeLeft = isFocus ? focusTime : breakTime;
+    }
+  }, 1000);
+}
+
+function pause() {
+  isRunning = false;
+  clearInterval(timer);
+}
+
+function reset() {
+  pause();
+  focusTime = document.getElementById("focusInput").value * 60;
+  breakTime = document.getElementById("breakInput").value * 60;
+  isFocus = true;
+  timeLeft = focusTime;
+  updateDisplay();
+}
+
+updateDisplay();
+</script>
+
+</body>
+</html>
